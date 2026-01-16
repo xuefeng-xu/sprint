@@ -1,40 +1,20 @@
 import os
 import tarfile
 from pathlib import Path
-from urllib.request import urlretrieve
+from huggingface_hub import hf_hub_download
 from faiss import knn, METRIC_INNER_PRODUCT
 from faiss.contrib.vecs_io import fvecs_read, ivecs_read, ivecs_write
 
 
-def show_progress(block_num, block_size, total_size):
-    print(
-        f"Downloading: {round(min(block_num * block_size / total_size, 1) * 100, 2)}%",
-        end="\r",
-    )
-
-
-def download(url, zip_file):
-    try:
-        urlretrieve(url, zip_file, reporthook=show_progress)
-        print()
-    except Exception as e:
-        raise RuntimeError(f"Failed to download from {url}: {e}") from e
-
-
-def extract(zip_file, extract_path):
+def extract(tar_file, extract_path):
     try:
         # Extract tar.gz file
-        file = tarfile.open(zip_file)
+        file = tarfile.open(tar_file)
         file.extractall(extract_path, numeric_owner=True)
         file.close()
 
     except Exception as e:
-        raise RuntimeError(f"Failed to extract {zip_file}: {e}") from e
-
-
-def download_and_extract(url, zip_file, extract_path):
-    download(url, zip_file)
-    extract(zip_file, extract_path)
+        raise RuntimeError(f"Failed to extract {tar_file}: {e}") from e
 
 
 def dataset_path(dataset):
@@ -46,18 +26,23 @@ def dataset_path(dataset):
 def download_dataset(dataset):
     dataset_dir = dataset_path(dataset)
     dataset_dir.mkdir(parents=True, exist_ok=True)
-    zip_file = dataset_dir / f"{dataset}.tar.gz"
+    tar_file = dataset_dir / f"{dataset}.tar.gz"
 
-    download_and_extract(
-        f"https://www.cse.cuhk.edu.hk/systems/hash/gqr/dataset/{dataset}.tar.gz",
-        zip_file,
-        dataset_dir.parent,
-    )
+    if not tar_file.exists():
+        hf_hub_download(
+            repo_id="vecdb/vector",
+            filename=f"{dataset}.tar.gz",
+            repo_type="dataset",
+            local_dir=dataset_dir,
+        )
+
+    extract(tar_file, dataset_dir.parent)
 
 
 def generate_groundtruth(dataset, k=100):
     dataset_dir = dataset_path(dataset)
 
+    # Inner product distance
     _, I = knn(
         load_data(dataset, "query"),
         load_data(dataset, "base"),
@@ -68,7 +53,7 @@ def generate_groundtruth(dataset, k=100):
     # Ensure write permission for the dataset directory
     os.chmod(dataset_dir, os.stat(dataset_dir).st_mode | 0o200)
 
-    gt_file = dataset_dir / f"{dataset}_gt_k_{k}.ivecs"
+    gt_file = dataset_dir / f"{dataset}_gt_ip_k_{k}.ivecs"
     ivecs_write(gt_file, I)
 
 
@@ -101,7 +86,7 @@ def load_data(dataset, ftype, k=100):
     elif ftype == "query":
         file = dataset_dir / f"{dataset}_query.fvecs"
     elif ftype == "gt":
-        file = dataset_dir / f"{dataset}_gt_k_{k}.ivecs"
+        file = dataset_dir / f"{dataset}_gt_ip_k_{k}.ivecs"
     else:
         raise ValueError(f"Unknown file type: {ftype}")
 

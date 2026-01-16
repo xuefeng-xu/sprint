@@ -1,6 +1,5 @@
 from argparse import ArgumentParser
-from hbkt import hier_balanced_kmeans
-from utils import load_base, save_indices
+from py.utils import load_base, save_indices, load_indices, hier_balanced_kmeans
 
 
 def get_common_parser():
@@ -8,14 +7,16 @@ def get_common_parser():
     parser.add_argument("--dataset", default="movielens", type=str, help="Dataset name")
     parser.add_argument("--n0", default=100, type=int, help="Number of the root node")
     parser.add_argument("--branch", default=2, type=int, help="Tree branching factor")
-    parser.add_argument(
-        "--saveidx",
-        default=1,
-        type=int,
-        choices=[0, 1],
-        help="Whether to save the indices",
-    )
     return parser
+
+
+def build_index(dataset, xb, n0, branch):
+    try:
+        indices = load_indices(dataset, n0, branch)
+    except FileNotFoundError:
+        indices = hier_balanced_kmeans(xb, n0, branch)
+        save_indices(indices, dataset, n0, branch)
+    return indices
 
 
 if __name__ == "__main__":
@@ -24,17 +25,19 @@ if __name__ == "__main__":
 
     xb = load_base(args.dataset)
     nb, d = xb.shape
-    print(f"{args.dataset}: nb {nb}, dim {d}")
+    print(f"{args.dataset}: dim={d}, nb={nb}")
 
-    indices = hier_balanced_kmeans(xb, args.n0, args.branch)
+    indices = build_index(args.dataset, xb, args.n0, args.branch)
 
     height = len(indices) - 1
+    total_nodes = 0
     for i in range(height + 1):
         n_nodes = len(indices[i])
-        if i < height:
-            print(f"Level {i}: {n_nodes} nodes, branch {len(indices[i+1]) // n_nodes}")
+        total_nodes += n_nodes
+        if i == 0:
+            print(f"Level {i}: #nodes={n_nodes}")
         else:
-            print(f"Level {i}: {n_nodes} nodes")
-
-    if args.saveidx:
-        save_indices(indices, args.dataset, args.n0, args.branch)
+            print(
+                f"Level {i}: #nodes={n_nodes}, branch={n_nodes // len(indices[i - 1])}"
+            )
+    print(f"Total #nodes: {total_nodes}")

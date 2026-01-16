@@ -21,10 +21,10 @@ class TopK:
             self.indices.remove(i)
 
     def get_topk_indices(self):
-        return [idx for _, idx in sorted(self.heap, reverse=True)]
+        return [int(idx) for _, idx in sorted(self.heap, reverse=True)]
 
     def get_topk_distances(self):
-        return [dist for dist, _ in sorted(self.heap, reverse=True)]
+        return [float(dist) for dist, _ in sorted(self.heap, reverse=True)]
 
     def get_topk_items(self):
         self.heap = sorted(self.heap, reverse=True)

@@ -1,4 +1,4 @@
-# SPRINT
+# SPRINT: Scalable Private Retrieval with Indexed Neighbor Trees
 
 ## Installation
 
@@ -8,7 +8,7 @@
 git clone https://github.com/xuefeng-xu/sprint.git && cd sprint
 ```
 
-#### 2. Python Setup
+#### 2. Python Setup:
 
 2.i. Create a Python environment:
 
@@ -23,21 +23,14 @@ conda activate sprint
 pip install -e .
 ```
 
-#### 3. C++ Setup
+## System Requirements
 
-3.i. Prerequisites:
-
-- C++17
-- [Bazel](https://bazel.build/install)
-
-3.ii. Build the project:
-
-```bash
-bazel build //cpp:all
-```
+We recommend using a Linux system with at least 128GB of memory to run experiments.
 
 ## Reproduction
 
-Dataset http://www.cse.cuhk.edu.hk/systems/hash/gqr/datasets.html
+For Python experiments, see [py/README.md](py/README.md).
 
-Plots are saved under `./img/*.pdf`
+Datasets are automatically downloaded from https://huggingface.co/datasets/vecdb/vector
+
+Plots are saved in `./img/*.pdf`

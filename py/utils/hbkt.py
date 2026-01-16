@@ -5,18 +5,17 @@ from k_means_constrained import KMeansConstrained
 
 def balanced_kmeans(x, n_clusters, random_state=0):
     n, _ = x.shape
+    target_size = math.ceil(n / n_clusters)
 
     kmeans = KMeansConstrained(
         n_clusters=n_clusters,
-        size_min=n // n_clusters,
-        size_max=math.ceil(n / n_clusters),
+        size_max=target_size,
         random_state=random_state,
         n_jobs=-1,
     )
     kmeans.fit(x)
 
     bincount = np.bincount(kmeans.labels_)
-    maxcount = np.max(bincount)
 
     parents = []
     children = []
@@ -31,8 +30,8 @@ def balanced_kmeans(x, n_clusters, random_state=0):
         parent_i = np.flatnonzero(mask)[parent_i]
         parents.append(parent_i)
 
-        if bincount[i] < maxcount:
-            diff = int(maxcount - bincount[i])
+        if bincount[i] < target_size:
+            diff = int(target_size - bincount[i])
 
             # Find the closest vectors from other clusters
             dist_other_i = x[~mask].dot(x[parent_i])
@@ -54,28 +53,28 @@ def balanced_kmeans(x, n_clusters, random_state=0):
 
 def hier_balanced_kmeans(x, n0, branch, random_state=0):
     # Top level
-    indices_0, children = balanced_kmeans(x, n0, random_state=random_state)
-    indices = [indices_0]
+    indices_lvl_0, children = balanced_kmeans(x, n0, random_state=random_state)
+    indices = [indices_lvl_0]
 
     # Top-down construction
     while len(children[0]) >= 3 * branch:
-        indices_i = []
-        children_i = []
+        indices_lvl_i = []
+        children_lvl_i = []
 
-        for child_j in children:
-            indices_j, children_j = balanced_kmeans(
-                x[child_j], branch, random_state=random_state
+        for children_j in children:
+            sub_indices, sub_children = balanced_kmeans(
+                x[children_j], branch, random_state=random_state
             )
 
             # Map back to original indices
-            indices_i.extend(child_j[indices_j])
+            indices_lvl_i.extend(children_j[sub_indices])
 
             # Store children indices for next level
-            for c in children_j:
-                children_i.append(child_j[c])
+            for chn in sub_children:
+                children_lvl_i.append(children_j[chn])
 
-        children = children_i
-        indices.append(indices_i)
+        children = children_lvl_i
+        indices.append(indices_lvl_i)
 
     # Bottom level
     children = np.asarray(children).flatten()
