@@ -91,6 +91,7 @@ def search_per_query(xq, xb, centroids, indices, beamw=1, k=100):
 
     # Find closest centroids
     dist_cent = centroids.dot(xq)
+    beamw = min(beamw, len(centroids))
     cent_idx = np.argpartition(dist_cent, -beamw)[-beamw:]
 
     for c_idx in cent_idx:

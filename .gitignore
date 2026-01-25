@@ -206,6 +206,8 @@ go.work.sum
 
 .DS_Store
 
+/go/pianopir/
+
 /dataset/
 
 /result/
