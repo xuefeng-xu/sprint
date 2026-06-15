@@ -23,7 +23,7 @@ def balanced_clustering(x):
         size_min=n // n_clusters,
         size_max=math.ceil(n / n_clusters),
         random_state=0,
-        n_jobs=-1,
+        n_jobs=-1,  # Adjust to reduce memory usage
     )
     kmeans.fit(x)
 

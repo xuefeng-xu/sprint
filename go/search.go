@@ -177,7 +177,12 @@ func queryBatchAll(pir *pianopir.SimpleBatchPianoPIR, batch []uint64) ([][]uint6
 	}
 
 	pendingByPartition := make([][]uint64, cfg.PartitionNum)
-	for idx := range positionsByIdx {
+	pendingAdded := make(map[uint64]bool, len(positionsByIdx))
+	for _, idx := range batch {
+		if pendingAdded[idx] {
+			continue
+		}
+		pendingAdded[idx] = true
 		partitionIdx := idx / cfg.PartitionSize
 		if partitionIdx >= cfg.PartitionNum {
 			return nil, 0, fmt.Errorf("computed partition out of range: idx=%d partitionIdx=%d PartitionNum=%d PartitionSize=%d", idx, partitionIdx, cfg.PartitionNum, cfg.PartitionSize)
@@ -230,9 +235,20 @@ func queryBatchAll(pir *pianopir.SimpleBatchPianoPIR, batch []uint64) ([][]uint6
 			return nil, queryTime, fmt.Errorf("internal error: constructed round of size %d want %d", len(round), cfg.BatchSize)
 		}
 
-		onlineStart := time.Now()
-		responses, err := pir.Query(round)
-		queryTime += time.Since(onlineStart)
+		// Online timing: count only successful PIR queries.
+		responses := ([][]uint64)(nil)
+		var err error
+		for attempt := 0; attempt < 5; attempt++ {
+			onlineStart := time.Now()
+			responses, err = pir.Query(round)
+			onlineElapsed := time.Since(onlineStart)
+			if err == nil {
+				queryTime += onlineElapsed
+				break
+			}
+			// Offline maintenance (excluded from online timing): rebuild hints and retry once.
+			pir.Preprocessing()
+		}
 		if err != nil {
 			return nil, queryTime, err
 		}

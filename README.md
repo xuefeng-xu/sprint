@@ -29,7 +29,7 @@ pip install -e .
 
 Install [Go](https://golang.org/dl/) (1.22.1 or higher)
 
-3.ii. Download [pionopir](https://github.com/wuwuz/Pacmann/tree/5dc056d75ceaeeedba8cbbd6b0b1c0a00a78b674/pianopir) folder and put it at `./go/pianopir`
+3.ii. Download [pianopir](https://github.com/wuwuz/Pacmann/tree/5dc056d75ceaeeedba8cbbd6b0b1c0a00a78b674/pianopir) folder and put it at `./go/pianopir`
 
 3.iii. Download dependencies:
 
